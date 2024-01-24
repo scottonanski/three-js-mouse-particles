@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
-
 // Declare everything we know we're going to need (or eventually need);
 let canvas,
   scene,
@@ -34,7 +33,6 @@ let currentLookAt = new THREE.Vector3(0, 0, 0);
 let targetLookAt = new THREE.Vector3(0, 0, 0);
 let particles = [];
 
-
 // I foreget what plane this is. I *think* it's the plane for the particles?
 // Could be for the rotating cylindar? Probably the plane though...
 let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -52,7 +50,7 @@ function getMousePositionIn3D(mouseX, mouseY, camera) {
 function loadEyeballModel() {
   const loader = new GLTFLoader();
   loader.load(
-    'eyeball.gltf',
+    'https://raw.githubusercontent.com/scottonanski/three-js-mouse-particles/main/eyeball.gltf',
     (gltf) => {
       eyeballModel = gltf.scene; // Assign the loaded model to the eyeballModel variable
       eyeballModel.scale.set(0.1, 0.1, 0.1); // Scale it down initially
@@ -74,7 +72,7 @@ function loadSecondEyeball() {
   const loader = new GLTFLoader();
 
   loader.load(
-    'eyeball.gltf', 
+    'https://raw.githubusercontent.com/scottonanski/three-js-mouse-particles/main/eyeball.gltf', 
     (gltf) => {
 
       eyeballModel2 = gltf.scene;
@@ -124,7 +122,6 @@ function setup_PerspectiveCamera() {
   perspectiveCamera.position.z = 10;
   perspectiveCamera.layers.set(perspectiveLayer);
 }
-
 
 // Lighting Rigs. (You need light to seem right?)
 function setup_Lights() {
@@ -382,7 +379,7 @@ function createParticle(x, y, z) {
 
 // This updates the particles AFTER they're generated.
 function updateParticles() {
-  const GROWTH_SPEED = 0.15; // This defines how fast particles grow each frame.
+  const GROWTH_SPEED = 0.05; // This defines how fast particles grow each frame.
   const MAX_SIZE = 3; // Corresponds to 100px
   const ONE_SECOND = 120; // Assuming 60fps
   const SHRINK_SPEED = MAX_SIZE / ONE_SECOND / 2; // Ensure it shrinks from 1.0 to 0 in 1 second.
@@ -390,9 +387,9 @@ function updateParticles() {
   for (let i = 0; i < particles.length; i++) {
     const particle = particles[i];
 
-    particle.position.x += (particle.directionX * particle.speedX) * 0.025;
-    particle.position.y += (particle.directionY * particle.speedY) * 0.025;
-    particle.position.z += (particle.directionZ * particle.speedZ) * 0.05;
+    particle.position.x += (particle.directionX * particle.speedX) * 0.03;
+    particle.position.y += (particle.directionY * particle.speedY) * 0.03;
+    particle.position.z += (particle.directionZ * particle.speedZ) * 0.03;
 
     // Mouse Interaction
     const distanceToMouse = new THREE.Vector3().subVectors(targetLookAt, particle.position).length();
@@ -500,7 +497,6 @@ loadEyeballModel();
 loadSecondEyeball();
 setup_eyeRotation();
 animate();
-
 
 
 
