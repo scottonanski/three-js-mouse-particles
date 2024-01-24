@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 
+
 // Declare everything we know we're going to need (or eventually need);
 let canvas,
   scene,
@@ -16,6 +17,13 @@ let canvas,
   window_innerWidth,
   window_innerHeight;
 
+
+// This is the doohicky to display the FSP counter in the bottom-right corner.
+let lastTime = 0;
+let frameCount = 0;
+let fpsContainer = document.getElementById("fps-value");
+
+// Set thes the initial mouse positions in 3d space. X, Y, and ZEEEEEHAW! 
 let mouse = {
   x: 0,
   y: 0,
@@ -26,8 +34,12 @@ let currentLookAt = new THREE.Vector3(0, 0, 0);
 let targetLookAt = new THREE.Vector3(0, 0, 0);
 let particles = [];
 
+
+// I foreget what plane this is. I *think* it's the plane for the particles?
+// Could be for the rotating cylindar? Probably the plane though...
 let plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 
+// This will grab the postion of the mouse in 3D space
 function getMousePositionIn3D(mouseX, mouseY, camera) {
   let vector = new THREE.Vector3(mouseX, mouseY, 0.5).unproject(camera);
   let ray = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
@@ -36,6 +48,7 @@ function getMousePositionIn3D(mouseX, mouseY, camera) {
   return intersectionPoint;
 }
 
+// Load an initial model of an eyeball (the one for the particles)
 function loadEyeballModel() {
   const loader = new GLTFLoader();
   loader.load(
@@ -55,7 +68,7 @@ function loadEyeballModel() {
   );
 }
 
-// Load a second instance 
+// Load a second instance of the eyeball model (the one in the center of the screen)
 function loadSecondEyeball() {
 
   const loader = new GLTFLoader();
@@ -86,7 +99,6 @@ function loadSecondEyeball() {
 
 }
 
-
 // Set up the things we need, and place them in their own functions;
 
 // This will set up the canvas element
@@ -113,6 +125,8 @@ function setup_PerspectiveCamera() {
   perspectiveCamera.layers.set(perspectiveLayer);
 }
 
+
+// Lighting Rigs. (You need light to seem right?)
 function setup_Lights() {
   // Add an ambient light
   const ambientLight = new THREE.AmbientLight(0xffffff, 1);
@@ -136,7 +150,7 @@ function setup_Renderer() {
   renderer.setSize(window_innerWidth, window_innerHeight);
 }
 
-// Let's throw some shade...
+// Let's throw some shade... (makes the gooey stuff in the background...)
 function setup_ShaderMaterial() {
 
   shaderMaterial = new THREE.ShaderMaterial({
@@ -187,25 +201,25 @@ function setup_ShaderMaterial() {
     
       vec2 n = vec2(0.0), N = vec2(0.0), q;
       vec4 o = vec4(0.0);
-      float S = 20.0, a = 0.0, j = 1.0, t = iTime;
+      float S = 25.0, a = 0.0, j = 1.5, t = iTime;
     
-      for (mat2 m = rotate2D(1.0); j++ < 20.0; S *= 1.5) {
+      for (mat2 m = rotate2D(1.0); j++ < 20.0; S *= 1.4) {
           p *= m;
           n *= m;
-          q = p * S + j + n + t + 1.0 + heartBeat;
+          q = p * S + j + n + t + 2.0 + heartBeat;
           a += dot(cos(q) / S, vec2(1.0));
           n += q = sin(q);
-          N += q / (S + 4.0);
+          N += q / (S + 10.0);
       }
     
       o += vec4(0.14 - a * 1.0);
-      o.r *= 3.0;   // Red
-      o.g *= 0.1;   // Green
-      o.b *= 0.35;   // Blue
+      o.r *= 2.0;   // Red
+      o.g *= 0.03;   // Green
+      o.b *= 0.03;   // Blue
 
       o += min(1.0, 0.001 / length(N));
       o -= o * dot(p, p) * 0.0;
-      o.a = 1.0;
+      o.a = 8.0;
     
       fragColor = o;
     }
@@ -233,7 +247,8 @@ function setup_Meshes() {
   scene.add(cylinderMesh);
 }
 
-function setup_cubeRotation() {
+// Controls the center eye as it follows the mouse location in 3d space.
+function setup_eyeRotation() {
   const sensitivity = 50; // Increase or decrease this value to change the sensitivity.
 
   if (eyeballModel2) {
@@ -293,6 +308,7 @@ function randomPointInCircle(radius) {
   };
 }
 
+// This Creates the general attributes for the particles as they are generatate by the mouse movements.
 function createParticle(x, y, z) {
   if (eyeballModel) {
     const particle = eyeballModel.clone(); // Change this line to clone eyeballModel
@@ -364,18 +380,19 @@ function createParticle(x, y, z) {
   }
 }
 
+// This updates the particles AFTER they're generated.
 function updateParticles() {
-  const GROWTH_SPEED = 0.05; // This defines how fast particles grow each frame.
-  const MAX_SIZE = 2; // Corresponds to 100px
+  const GROWTH_SPEED = 0.15; // This defines how fast particles grow each frame.
+  const MAX_SIZE = 3; // Corresponds to 100px
   const ONE_SECOND = 120; // Assuming 60fps
   const SHRINK_SPEED = MAX_SIZE / ONE_SECOND / 2; // Ensure it shrinks from 1.0 to 0 in 1 second.
 
   for (let i = 0; i < particles.length; i++) {
     const particle = particles[i];
 
-    particle.position.x -= (particle.directionX * particle.speedX) * 0.025;
-    particle.position.y -= (particle.directionY * particle.speedY) * 0.025;
-    particle.position.z -= (particle.directionZ * particle.speedZ) * 0.025;
+    particle.position.x += (particle.directionX * particle.speedX) * 0.025;
+    particle.position.y += (particle.directionY * particle.speedY) * 0.025;
+    particle.position.z += (particle.directionZ * particle.speedZ) * 0.05;
 
     // Mouse Interaction
     const distanceToMouse = new THREE.Vector3().subVectors(targetLookAt, particle.position).length();
@@ -399,7 +416,7 @@ function updateParticles() {
       particle.scale.z -= SHRINK_SPEED;
     }
 
-    // Remove if Shrunk Completely
+    // Remove Particle if Shrunk Completely
     if (particle.scale.x <= 0) {
       scene.remove(particle);
       particles.splice(i, 1);
@@ -420,8 +437,19 @@ function updateParticles() {
 // Let's GOOOOOOOOOOOOOOOOOOOOO!
 function animate() {
   currentLookAt.lerp(targetLookAt, 1);
-  setup_cubeRotation();
+  setup_eyeRotation();
   updateParticles();
+  
+   // FSP Counter  
+  const now = performance.now();
+  const delta = now - lastTime;
+  frameCount++;
+  if (delta >= 1000) {
+    // Update every second
+    fpsContainer.innerHTML = frameCount;
+    frameCount = 0;
+    lastTime = now;
+  }
 
   // Particle Animation
   const MAX_AGE = 6; // Define the maximum age of particles (in seconds)
@@ -436,21 +464,22 @@ function animate() {
       i--; // Adjust index due to splice
       continue;
     }
+
   }
 
   requestAnimationFrame(animate);
 
-  shaderMaterial.uniforms.iTime.value += 0.025;
+  shaderMaterial.uniforms.iTime.value += 0.030;
   let t = shaderMaterial.uniforms.iTime.value;
   shaderMaterial.uniforms.heartBeat.value =
     2.0 * (Math.sin(t * 0.5) * Math.abs(Math.sin(t * 0.25)));
 
-  cylinderMesh.rotation.y -= 0.0025;
+  cylinderMesh.rotation.y -= 0.003;
 
   renderer.render(scene, perspectiveCamera);
 }
 
-// Resize Event Listener.
+// Resize Event Listener. Can't get this to work properly, but whatever. This still looks cool.
 window.addEventListener('resize', () => {
   window_innerWidth = window.innerWidth;
   window_innerHeight = window.innerHeight;
@@ -469,32 +498,8 @@ setup_ShaderMaterial();
 setup_Meshes();
 loadEyeballModel();
 loadSecondEyeball();
-setup_cubeRotation();
+setup_eyeRotation();
 animate();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
